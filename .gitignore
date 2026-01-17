@@ -53,6 +53,7 @@ outputs/
 reduction/
 photometry_out/
 results/
+Regions/
 
 # Secrets
 .env

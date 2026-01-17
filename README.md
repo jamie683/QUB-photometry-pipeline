@@ -55,6 +55,3 @@ After installing, you can run:
 ```bash
 qub-pipeline run --config config/example_config.json
 # or
-qub-reduction --config config/example_config.json
-qub-photometry --config config/example_config.json
-```
