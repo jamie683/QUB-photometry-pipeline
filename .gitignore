@@ -1,0 +1,61 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+reduction/
+photometry/
+outputs/
+*.fits
+*.csv
+*.png
+*.pdf
+*.log
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+*.pyo
+*.egg-info/
+.venv/
+venv/
+env/
+.conda/
+.ipynb_checkpoints/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Data products / astronomy
+*.fits
+*.fit
+*.fts
+*.fz
+*.xisf
+*.npz
+*.npy
+*.csv
+*.log
+
+# Plots (optional; remove these if you WANT plots versioned)
+*.png
+*.jpg
+*.jpeg
+*.pdf
+
+# Big outputs
+out/
+outputs/
+reduction/
+photometry_out/
+results/
+
+# Secrets
+.env
+config_local.json
+*token*
+*secret*

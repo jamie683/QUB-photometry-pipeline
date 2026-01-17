@@ -1,0 +1,12 @@
+numpy
+scipy
+pandas
+matplotlib
+astropy
+photutils
+batman-package
+emcee
+corner
+tqdm
+regex
+psutil

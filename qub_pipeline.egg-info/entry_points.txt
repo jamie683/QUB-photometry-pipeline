@@ -1,0 +1,4 @@
+[console_scripts]
+qub-photometry = qub_pipeline.photometry:main
+qub-pipeline = qub_pipeline.cli:main
+qub-reduction = qub_pipeline.reduction:main

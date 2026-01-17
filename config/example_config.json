@@ -1,0 +1,88 @@
+{
+  "paths": {
+    "science_dir": "science",
+    "dark_dir": "dark",
+    "reduction_outdir": "reduction",
+    "photometry_outdir": "photometry",
+    "reg_path": "regions/target_and_comps.reg"
+  },
+  "reduction": {
+    "cube_name": "science_cube.fits",
+    "bias_dir": "C:/Users/Jamie McAteer/PythonSaves/Fits/qub_pipeline_github/Bias",
+    "science_dir": "C:/Users/Jamie McAteer/PythonSaves/Fits/qub_pipeline_github/Science",
+    "dark_dir":    "C:/Users/Jamie McAteer/PythonSaves/Fits/qub_pipeline_github/Dark",
+    "exptime_key": "EXPTIME",
+    "exptime": 30.0
+  },
+  "photometry": {
+    "start_frame": 141,
+    "plot": true,
+    "k_ap": 1.4,
+    "k_in": 2.5,
+    "k_out": 4.0,
+    "min_snr_ref": 20,
+    "min_snr_targ": 10,
+    "min_snr_comp": 10,
+    "min_valid_comps": 8,
+    "fwhm_min": 0.5,
+    "fwhm_max": 15.0,
+    "write_tracked_reg_every": 25,
+    "regions_path": "C:\\Users\\Jamie McAteer\\PythonSaves\\Fits\\qub_pipeline_github\\Regions\\TOI_1516_targets2.reg",
+    "outdir": "C:\\Users\\Jamie McAteer\\PythonSaves\\Fits\\qub_pipeline_github\\outputs",
+    "segments": [
+      { "start": 0,   "end": 141, "region_path": "C:\\Users\\Jamie McAteer\\PythonSaves\\Fits\\qub_pipeline_github\\Regions\\TOI_1516_targets.reg" },
+      { "start": 141, "end": null,"region_path": "C:\\Users\\Jamie McAteer\\PythonSaves\\Fits\\qub_pipeline_github\\Regions\\TOI_1516_targets2.reg" }
+    ]
+  },
+ "target": {
+  "name": "TOI_1516_b",
+  "ra": "22:40:20.26",
+  "dec": "+69:30:13.46"
+  },
+  "site": {
+    "lat_deg": 54.58,
+    "lon_deg": -5.93,
+    "height_m": 45
+  },
+  "error_model": {
+    "beta": 1.3216
+  },
+  "analysis": {
+    "adopt_comparison_optimisation": false
+  },
+  "scripts": {
+    "reduction_script": "scripts/qub_reduction.py",
+    "photometry_script": "scripts/qub_photometry.py"
+  },
+  "instrument": {
+    "gain_e_per_adu": 1.0,
+    "read_noise": 0.0,
+    "read_noise_units": "e",
+    "hdu_index": 0
+  },
+  "ephemeris": {
+    "t0_bjd": 2459653.523161,
+    "period_days": 2.05601465
+  },
+  "transit_geom": {
+    "a_rs": 4.28,
+    "inc_deg": 84.7,
+    "ecc": 0.0,
+    "omega_deg": 90.0
+  },
+  "limb_darkening": {
+    "law": "quadratic",
+    "u1_0": 0.21,
+    "u2_0": 0.29,
+    "bandpass": "R"
+  },
+  "ensemble": {
+    "method": "median",
+    "min_n_comp": 3,
+    "max_n_comp": 50,
+    "allow_target_in_ensemble": false
+  },
+  "time": {
+    "priority_cols": ["BJD_TDB", "BJD", "JD", "MJD", "DATE-OBS"]
+  }
+}

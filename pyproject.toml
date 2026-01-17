@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qub-pipeline"
+version = "0.1.0"
+description = "QUB transit photometry pipeline (reduction + photometry + modelling) driven by a single JSON config."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "Jamie McAteer"}]
+dependencies = [
+  "numpy",
+  "scipy",
+  "pandas",
+  "matplotlib",
+  "astropy",
+  "photutils",
+  "batman-package",
+  "emcee",
+  "corner",
+  "tqdm",
+  "regex",
+  "psutil",
+]
+
+[project.scripts]
+qub-pipeline = "qub_pipeline.cli:main"
+qub-reduction = "qub_pipeline.reduction:main"
+qub-photometry = "qub_pipeline.photometry:main"
+
+[tool.setuptools]
+packages = ["qub_pipeline"]
+
+[tool.setuptools.package-data]
+qub_pipeline = ["py.typed"]
