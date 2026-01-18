@@ -1,0 +1,11 @@
+cff-version: 1.0.0
+title: "QUB-photometry-pipeline"
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: McAteer
+    given-names: Jamie
+version: 1.1.0
+doi: 10.5281/zenodo.18279844
+
+date-released: 2026-01-08
+license: MIT

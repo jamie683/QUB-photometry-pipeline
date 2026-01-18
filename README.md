@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/1136032536.svg)](https://doi.org/10.5281/zenodo.18279844)
+
 # QUB Transit Photometry Pipeline
 
 This repository contains a small, config-driven pipeline for reducing QUB observatory data into a calibrated FITS cube and then extracting a differential light curve via aperture photometry.
