@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 #"%USERPROFILE%\pyenvs\astro\Scripts\activate"
+# python scripts\run_pipeline.py --config "...\config\example_config.json" --verbose
 """QUB transit photometry pipeline.
 
 Takes a calibrated FITS cube plus a DS9 region file (target first, then comparison stars),
@@ -44,16 +45,6 @@ warnings.filterwarnings("ignore", message="This figure includes Axes that are no
 
 
 # --- CONFIG (defaults) ---
-
-# - FONT -
-plt.rcParams.update({
-    "font.size": 11,
-    "axes.labelsize": 11,
-    "axes.titlesize": 12,
-    "legend.fontsize": 10,
-    "xtick.labelsize": 10,
-    "ytick.labelsize": 10,
-})
 
 DEFAULTS: dict = {}
 
@@ -1338,7 +1329,7 @@ def run_photometry(cube_path: Path, reg_path: Path, outdir: Path, *, cfg: dict |
     plt.grid(alpha=0.3, which="both")
     plt.legend()
     plt.tight_layout()
-    plt.savefig(outdir / f"analysis_rms_bins_main_{cube_path.stem}.png", dpi=200)
+    plt.savefig(outdir / f"analysis_rms_bins_main_{cube_path.stem}.png", dpi=300)
     plt.close()
     
     run_summary["noise_test_main"] = {
@@ -1360,7 +1351,7 @@ def run_photometry(cube_path: Path, reg_path: Path, outdir: Path, *, cfg: dict |
         show_titles=True,
         title_fmt=".4f",
     )
-    fig.savefig(outdir / f"mcmc_corner_main_{cube_path.stem}.png", dpi=200)
+    fig.savefig(outdir / f"mcmc_corner_main_{cube_path.stem}.png", dpi=300)
     plt.close(fig)'''
 
 
@@ -1855,19 +1846,20 @@ def run_photometry(cube_path: Path, reg_path: Path, outdir: Path, *, cfg: dict |
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6),gridspec_kw={"height_ratios": [3, 1]},sharex=True)
     
         # --- Top panel ---
-        ax1.errorbar(x_sub, y_sub, yerr=yerr_sub, fmt="o", ms=4, elinewidth=1.0, ecolor="0.5", label="Data")
+        ax1.errorbar(x_sub, y_sub, yerr=yerr_sub, fmt='.', ecolor='gray', elinewidth=1, capsize=2, label="Data")
         ax1.plot(x_sub, y_med_sub, 'r-', lw=2, label="Median BATMAN model")  
         ax1.set_ylabel("Relative flux")
+        ax1.set_title("Phase-folded light curve with MCMC transit fit", fontsize=16)
         ax1.legend(loc="best")
-        ax1.grid(True, alpha=0.3)
+        ax1.tick_params(axis='both', labelsize=12)
+        ax1.grid(alpha=0.3)
         
         # --- Bottom panel ---
-        ax2.errorbar(x_sub, resid_sub, yerr=yerr_sub, fmt=".", ms=4, elinewidth=1.0, ecolor="grey")
+        ax2.errorbar(x_sub, resid_sub, yerr=yerr_sub, fmt='.', ecolor='gray', elinewidth=1, capsize=2)
         ax2.axhline(0.0, ls="--", color="k", lw=1)
         ax2.set_xlabel("Orbital phase")
         ax2.set_ylabel("Residuals")
-        ax2.grid(True, alpha=0.3)
-        fig.suptitle("MCMC transit fit")
+        ax2.grid(alpha=0.3)
         fig.tight_layout()
         fig.savefig(outdir / f"lightcurve_phase_mcmc_subset{rank}_{cube_path.stem}.png",dpi=300)
         plt.close(fig)
@@ -1884,6 +1876,7 @@ def run_photometry(cube_path: Path, reg_path: Path, outdir: Path, *, cfg: dict |
         resid_final = best["resid"]
         chain_final = best["chain"]
         best_js_final = best["comps"]
+        idx_used_final = best["idx_used_sub"]
         run_summary["final_solution"] = {
             "source": "best_subset",
             "subset": [int(i) for i in best_js_final],
@@ -1895,8 +1888,125 @@ def run_photometry(cube_path: Path, reg_path: Path, outdir: Path, *, cfg: dict |
         y_med_final, resid_final = y_med, resid
         chain_final = chain
         best_js_final = None
+        idx_used_final = idx_used
         run_summary["final_solution"] = {"source": "main_fit"}
         
+        
+    # --- Precision metrics (OOT) for final adopted solution ---
+    def _std_oot(a):
+        a = np.asarray(a, float)
+        a = a[np.isfinite(a)]
+        return float(np.nanstd(a, ddof=1)) if a.size >= 3 else np.nan
+    
+    def _binned_scatter_of_means(resid, N):
+        resid = np.asarray(resid, float)
+        resid = resid[np.isfinite(resid)]
+        if (N is None) or (N < 1):
+            return np.nan
+        n_full = (resid.size // N) * N
+        if n_full < 2 * N:
+            return np.nan
+        r = resid[:n_full].reshape(-1, N)
+        m = np.nanmean(r, axis=1)
+        return float(np.nanstd(m, ddof=1)) if m.size >= 2 else np.nan
+    
+    # Use the SAME OOT definition already stored in run_summary (|phase| > 0.015)
+    oot_final = np.isfinite(x_final) & np.isfinite(resid_final) & (np.abs(x_final) > 0.015)
+    resid_oot = np.asarray(resid_final)[oot_final]
+    
+    # σ per exposure (ppt)
+    sigma_per_exp = _std_oot(resid_oot)
+    sigma_per_exp_ppt  = 1e3 * sigma_per_exp
+    sigma_per_exp_mmag = 1085.74 * sigma_per_exp
+    
+    # --- Final precision (ppt) = beta * sigma_per_exp ---
+    beta_cfg = beta  # from config/error_model earlier (already validated)
+    
+
+    # σ_1min: infer cadence from the same frames used in the FINAL solution
+    t_used = np.asarray(t_bjd, float)[idx_used_final]
+    t_used = t_used[np.isfinite(t_used)]
+    dt_sec = float(np.nanmedian(np.diff(t_used)) * 86400.0) if t_used.size >= 2 else np.nan
+    
+    N_1min = int(np.clip(np.round(60.0 / dt_sec), 1, 10**9)) if (np.isfinite(dt_sec) and dt_sec > 0) else None
+    sigma_1min = _binned_scatter_of_means(resid_oot, N_1min)
+    sigma_1min_ppt  = 1e3 * sigma_1min if np.isfinite(sigma_1min) else np.nan
+    sigma_1min_mmag = 1085.74 * sigma_1min if np.isfinite(sigma_1min) else np.nan
+    
+    # Log + store
+    log_print("\nPrecision (OOT, final adopted residuals):")
+    log_print(f"  cadence ≈ {dt_sec:.2f} s  (N_1min={N_1min})")
+    log_print(f"  sigma_per_exp = {sigma_per_exp_ppt:.3f} ppt  ({sigma_per_exp_mmag:.3f} mmag)")
+    log_print(f"  sigma_1min    = {sigma_1min_ppt:.3f} ppt  ({sigma_1min_mmag:.3f} mmag)")
+    
+    run_summary["precision"] = {
+        "oot_definition": "|phase| > 0.015",
+        "cadence_sec_median": None if not np.isfinite(dt_sec) else float(dt_sec),
+        "Nbin_1min": None if N_1min is None else int(N_1min),
+        "sigma_per_exp": None if not np.isfinite(sigma_per_exp) else float(sigma_per_exp),
+        "sigma_per_exp_ppt": None if not np.isfinite(sigma_per_exp_ppt) else float(sigma_per_exp_ppt),
+        "sigma_per_exp_mmag": None if not np.isfinite(sigma_per_exp_mmag) else float(sigma_per_exp_mmag),
+        "sigma_1min": None if not np.isfinite(sigma_1min) else float(sigma_1min),
+        "sigma_1min_ppt": None if not np.isfinite(sigma_1min_ppt) else float(sigma_1min_ppt),
+        "sigma_1min_mmag": None if not np.isfinite(sigma_1min_mmag) else float(sigma_1min_mmag),
+        "beta_used_for_final_precision": None,
+        "final_precision_ppt": None,
+    }
+
+
+    # - dt and T0 uncertainty -
+
+    # chain_final columns assumed: [rp, dt, c0, c1, log10_sj]
+    rp_samp = np.asarray(chain_final[:, 0], float)
+    dt_samp = np.asarray(chain_final[:, 1], float)
+    
+    # Guard: finite samples only
+    m_samp = np.isfinite(rp_samp) & np.isfinite(dt_samp)
+    rp_samp = rp_samp[m_samp]
+    dt_samp = dt_samp[m_samp]
+    
+    # - Rp/R* (posterior) -
+    rp50 = np.nanpercentile(rp_samp, 50)
+    rp16 = np.nanpercentile(rp_samp, 16)
+    rp84 = np.nanpercentile(rp_samp, 84)
+    
+    # - Depth (%) = 100 * (Rp/R*)^2 (posterior propagation) -
+    depth_samp = 100.0 * (rp_samp ** 2)
+    d50 = np.nanpercentile(depth_samp, 50)
+    d16 = np.nanpercentile(depth_samp, 16)
+    d84 = np.nanpercentile(depth_samp, 84)
+    
+    # - T0 offset (min) = 1440 * dt (posterior propagation) -
+    t0off_samp_min = 1440.0 * dt_samp
+    t50 = np.nanpercentile(t0off_samp_min, 50)
+    t16 = np.nanpercentile(t0off_samp_min, 16)
+    t84 = np.nanpercentile(t0off_samp_min, 84)
+    
+    # - RMS (ppt) on OOT residuals -
+    oot_mask_final = np.isfinite(x_final) & (np.abs(x_final) > 0.015) & np.isfinite(resid_final)
+    rms_ppt = float(1e3 * np.nanstd(np.asarray(resid_final)[oot_mask_final], ddof=1)) if np.sum(oot_mask_final) >= 5 else float("nan")
+    band = str('r')
+    run_summary["fit_summary_table"] = {
+        "band": str(band) if "band" in locals() else None,
+        "source": "best_subset" if final_is_subset else "main_fit",
+    
+        "rp_over_rs": float(rp50),
+        "rp_over_rs_err_minus": float(rp50 - rp16),
+        "rp_over_rs_err_plus":  float(rp84 - rp50),
+    
+        "depth_percent": float(d50),
+        "depth_percent_err_minus": float(d50 - d16),
+        "depth_percent_err_plus":  float(d84 - d50),
+    
+        "t0_offset_min": float(t50),
+        "t0_offset_min_err_minus": float(t50 - t16),
+        "t0_offset_min_err_plus":  float(t84 - t50),
+    
+        "rms_oot_ppt": rms_ppt,
+        "oot_definition": "|phase| > 0.015",
+    }
+    
+    
     # -- EXTRA PLOTS --
     if subset_mcmc_results:
         best = subset_mcmc_results[0]
@@ -1979,6 +2089,20 @@ def run_photometry(cube_path: Path, reg_path: Path, outdir: Path, *, cfg: dict |
         "rms_bins": rms_bins.tolist(),
         "computed_from": "best_subset" if final_is_subset else "main_fit",
     }
+
+    # --- Final precision (ppt): prefer measured beta, else config beta ---
+    beta_meas = run_summary.get("noise", {}).get("beta_measured_median", None)
+    
+    beta_use = beta_cfg
+    if beta_meas is not None and np.isfinite(beta_meas) and beta_meas > 0:
+        beta_use = float(beta_meas)
+    
+    final_precision_ppt = (1e3 * sigma_per_exp) * beta_use if np.isfinite(sigma_per_exp) else float("nan")
+    
+    run_summary["precision"]["beta_used_for_final_precision"] = float(beta_use)
+    run_summary["precision"]["final_precision_ppt"] = None if not np.isfinite(final_precision_ppt) else float(final_precision_ppt)
+    
+    log_print(f"  final precision (beta-inflated) = {final_precision_ppt:.3f} ppt  (beta={beta_use:.3f})")
 
     # -- NEW EXTRA PLOTS --
     def _time_hours_from_mid(t):
