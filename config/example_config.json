@@ -8,9 +8,9 @@
   },
   "reduction": {
     "cube_name": "science_cube.fits",
-    "bias_dir": "C:/Users/Jamie McAteer/PythonSaves/Fits/qub_pipeline_github/Bias",
-    "science_dir": "C:/Users/Jamie McAteer/PythonSaves/Fits/qub_pipeline_github/Science",
-    "dark_dir":    "C:/Users/Jamie McAteer/PythonSaves/Fits/qub_pipeline_github/Dark",
+    "bias_dir": "/path/to/bias/frames",
+    "science_dir": "/path/to/science/frames",
+    "dark_dir":    "/path/to/dark/frames",
     "exptime_key": "EXPTIME",
     "exptime": 30.0
   },
@@ -27,11 +27,11 @@
     "fwhm_min": 0.5,
     "fwhm_max": 15.0,
     "write_tracked_reg_every": 25,
-    "regions_path": "C:\\Users\\Jamie McAteer\\PythonSaves\\Fits\\qub_pipeline_github\\Regions\\TOI_1516_targets2.reg",
-    "outdir": "C:\\Users\\Jamie McAteer\\PythonSaves\\Fits\\qub_pipeline_github\\outputs",
+    "regions_path": "/path/to/region/file",
+    "outdir": "/output/path",
     "segments": [
-      { "start": 0,   "end": 141, "region_path": "C:\\Users\\Jamie McAteer\\PythonSaves\\Fits\\qub_pipeline_github\\Regions\\TOI_1516_targets.reg" },
-      { "start": 141, "end": null,"region_path": "C:\\Users\\Jamie McAteer\\PythonSaves\\Fits\\qub_pipeline_github\\Regions\\TOI_1516_targets2.reg" }
+      { "start": 0,   "end": 141, "region_path": "/path/to/first/reg" },
+      { "start": 141, "end": null,"region_path": "/path/to/second/reg" }
     ]
   },
  "target": {
